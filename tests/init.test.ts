@@ -1,5 +1,4 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { createBintastic, type BintasticProject } from 'bintastic';
@@ -84,7 +83,8 @@ describe('edd init', () => {
   });
 
   test('.gitignore appends .edd/ when missing, handles no trailing newline', async () => {
-    await writeFile(join(project.baseDir, '.gitignore'), 'node_modules/');
+    project.mergeFiles({ '.gitignore': 'node_modules/' });
+    await project.write();
 
     await runBin('init', '--cwd', project.baseDir);
 
@@ -97,7 +97,8 @@ describe('edd init', () => {
   });
 
   test('.gitignore skips when .edd/ already present', async () => {
-    await writeFile(join(project.baseDir, '.gitignore'), '.edd/\n');
+    project.mergeFiles({ '.gitignore': '.edd/\n' });
+    await project.write();
 
     const result = await runBin('init', '--cwd', project.baseDir);
 
@@ -107,8 +108,9 @@ describe('edd init', () => {
   });
 
   test('--cwd controls where files are created', async () => {
+    project.mergeFiles({ subproject: { '.gitkeep': '' } });
+    await project.write();
     const subdir = join(project.baseDir, 'subproject');
-    await mkdir(subdir, { recursive: true });
 
     await runBin('init', '--cwd', subdir);
 

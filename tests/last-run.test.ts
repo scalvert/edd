@@ -1,5 +1,4 @@
 import { existsSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { createBintastic, type BintasticProject } from 'bintastic';
@@ -65,17 +64,15 @@ describe('loadLastRun', () => {
   });
 
   test('throws on malformed JSON', async () => {
-    const dirPath = join(project.baseDir, '.edd');
-    await mkdir(dirPath, { recursive: true });
-    await writeFile(join(dirPath, 'last-run.json'), '{ not valid json }}}');
+    project.mergeFiles({ '.edd': { 'last-run.json': '{ not valid json }}}' } });
+    await project.write();
 
     await expect(loadLastRun(project.baseDir)).rejects.toThrow();
   });
 
   test('throws on invalid schema', async () => {
-    const dirPath = join(project.baseDir, '.edd');
-    await mkdir(dirPath, { recursive: true });
-    await writeFile(join(dirPath, 'last-run.json'), JSON.stringify({ runId: 123 }));
+    project.mergeFiles({ '.edd': { 'last-run.json': JSON.stringify({ runId: 123 }) } });
+    await project.write();
 
     await expect(loadLastRun(project.baseDir)).rejects.toThrow();
   });

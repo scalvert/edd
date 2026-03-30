@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { createBintastic, type BintasticProject } from 'bintastic';
@@ -69,11 +69,10 @@ describe('loadTestCases', () => {
   });
 
   test('throws on invalid JSON', async () => {
-    const dir = join(project.baseDir, 'tests');
-    await mkdir(dir, { recursive: true });
-    await writeFile(join(dir, 'bad.json'), '{ not valid }}}');
+    project.mergeFiles({ tests: { 'bad.json': '{ not valid }}}' } });
+    await project.write();
 
-    await expect(loadTestCases(dir)).rejects.toThrow(/Invalid JSON/);
+    await expect(loadTestCases(join(project.baseDir, 'tests'))).rejects.toThrow(/Invalid JSON/);
   });
 
   test('throws on schema validation failure', async () => {

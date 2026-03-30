@@ -1,5 +1,4 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { createBintastic, type BintasticProject } from 'bintastic';
@@ -33,7 +32,8 @@ describe('demo', () => {
   test('skips files that already exist', async () => {
     await demo(project.baseDir);
 
-    await writeFile(join(project.baseDir, 'edd.config.json'), '{"custom": true}');
+    project.mergeFiles({ 'edd.config.json': '{"custom": true}' });
+    await project.write();
 
     await demo(project.baseDir);
 
