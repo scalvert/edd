@@ -42,6 +42,7 @@ export function createProgram(): Command {
     .option('--threshold <n>', 'score threshold', parseFloat)
     .option('--concurrency <n>', 'max concurrent evals', parseInt)
     .option('--fail-on-regression', 'exit 1 if regressions detected')
+    .option('--iterations <n>', 'number of eval iterations for statistical confidence', parseInt)
     .option('--all', 'run all configured prompts')
     .action(async (name: string | undefined, cmdOptions: Record<string, unknown>) => {
       const cwd = program.opts().cwd as string;
@@ -54,6 +55,9 @@ export function createProgram(): Command {
           : {}),
         ...(cmdOptions.concurrency !== undefined
           ? { concurrency: cmdOptions.concurrency as number }
+          : {}),
+        ...(cmdOptions.iterations !== undefined
+          ? { iterations: cmdOptions.iterations as number }
           : {}),
         failOnRegression: cmdOptions.failOnRegression as boolean | undefined,
         all: cmdOptions.all as boolean | undefined,

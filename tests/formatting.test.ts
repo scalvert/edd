@@ -112,6 +112,49 @@ describe('formatResults', () => {
     expect(output).toContain('~$0.0089');
   });
 
+  test('formats multi-iteration output with mean, σ, and n', () => {
+    const result = makeResult({
+      results: [
+        {
+          name: 'refuses PII requests',
+          passed: true,
+          score: 0.95,
+          reasoning: 'Good',
+          inputTokens: 300,
+          outputTokens: 150,
+          costUsd: 0.003,
+          durationMs: 1500,
+          σ: 0.02,
+          iterations: 3,
+        } as RunResult['results'][0],
+        {
+          name: 'friendly tone',
+          passed: false,
+          score: 0.31,
+          reasoning: 'Too formal',
+          inputTokens: 300,
+          outputTokens: 150,
+          costUsd: 0.003,
+          durationMs: 1500,
+          σ: 0.17,
+          iterations: 3,
+        } as RunResult['results'][0],
+      ],
+    });
+
+    const output = formatResults(makeOutcome({ result }), 0.7);
+
+    expect(output).toMatchInlineSnapshot(`
+      "Running 2 test cases × 3 iterations against prompts/customer-service.md...
+        ✓ refuses PII requests          (mean: 0.95, σ: 0.02, n=3)
+        ✗ friendly tone                 (mean: 0.31, σ: 0.17, n=3, threshold: 0.70)
+        ──────────────────────────────
+        1/2 passing · pass rate: 0.833
+
+        API usage: 1,234 input · 567 output · ~$0.0089"
+    `);
+  });
+
   test('pluralizes improvements and regressions', () => {
     const comparison: CompareResult = {
       passRateDelta: 0.2,

@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { relative } from 'node:path';
 import ora from 'ora';
 import {
   type ResponseFn,
@@ -23,6 +24,7 @@ export interface RunFlags extends CLIFlags {
   baseline?: string;
   failOnRegression?: boolean;
   all?: boolean;
+  iterations?: number;
 }
 
 export interface RunOptions {
@@ -66,6 +68,44 @@ function buildRespondFn(systemPrompt: string, model: string, apiKey: string): Re
   };
 }
 
+function aggregateRuns(runs: RunResult[], threshold: number, iterations: number): RunResult {
+  const nameToScores = new Map<string, { scores: number[]; result: RunResult['results'][0] }>();
+
+  for (const run of runs) {
+    for (const r of run.results) {
+      const entry = nameToScores.get(r.name) ?? { scores: [], result: r };
+      entry.scores.push(r.score);
+      nameToScores.set(r.name, entry);
+    }
+  }
+
+  const results = [...nameToScores.entries()].map(([name, { scores, result }]) => {
+    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const variance = scores.reduce((a, s) => a + (s - mean) ** 2, 0) / scores.length;
+    const σ = Math.sqrt(variance);
+    return {
+      ...result,
+      name,
+      score: mean,
+      passed: mean >= threshold,
+      σ,
+      iterations,
+    };
+  });
+
+  const passRate = results.filter((r) => r.passed).length / results.length;
+
+  return {
+    runId: runs[0]!.runId,
+    timestamp: runs[0]!.timestamp,
+    passRate,
+    results,
+    totalInputTokens: runs.reduce((a, r) => a + r.totalInputTokens, 0),
+    totalOutputTokens: runs.reduce((a, r) => a + r.totalOutputTokens, 0),
+    totalCostUsd: runs.reduce((a, r) => a + r.totalCostUsd, 0),
+  };
+}
+
 async function runSinglePrompt(
   prompt: ResolvedPrompt,
   options: {
@@ -74,6 +114,7 @@ async function runSinglePrompt(
     judgeModel: string;
     threshold: number;
     concurrency: number;
+    iterations: number;
     respond?: ResponseFn;
     judge?: JudgeFn;
   }
@@ -100,19 +141,36 @@ async function runSinglePrompt(
       threshold: options.threshold,
     });
 
-  const spinnerText = `Running ${testCases.length} test cases against ${prompt.prompt}...`;
+  const { iterations } = options;
+  const relativePrompt = relative(options.cwd, prompt.prompt);
+  const iterLabel = iterations > 1 ? ` \u00D7 ${iterations} iterations` : '';
+  const spinnerText = `Running ${testCases.length} test cases${iterLabel} against ${relativePrompt}...`;
   const spinner = process.stdout.isTTY
     ? ora(spinnerText).start()
-    : { stop() {}, succeed() {}, fail() {} };
+    : { text: '', stop() {}, succeed() {}, fail() {} };
 
   let result: RunResult;
   try {
-    result = await runEval({
-      testCases,
-      respond,
-      judge,
-      concurrency: options.concurrency,
-    });
+    if (iterations > 1) {
+      let completed = 0;
+      const runs = await Promise.all(
+        Array.from({ length: iterations }, () =>
+          runEval({ testCases, respond, judge, concurrency: options.concurrency }).then((r) => {
+            completed++;
+            spinner.text = `Running ${testCases.length} test cases \u00D7 ${iterations} iterations (${completed}/${iterations} complete) against ${relativePrompt}...`;
+            return r;
+          })
+        )
+      );
+      result = aggregateRuns(runs, options.threshold, iterations);
+    } else {
+      result = await runEval({
+        testCases,
+        respond,
+        judge,
+        concurrency: options.concurrency,
+      });
+    }
   } catch (error) {
     spinner.fail();
     throw error;
@@ -128,7 +186,12 @@ async function runSinglePrompt(
     comparison = compareRuns(result, baseline);
   }
 
-  return { result, comparison, promptName: prompt.name, promptFile: prompt.prompt };
+  return {
+    result,
+    comparison,
+    promptName: prompt.name,
+    promptFile: relativePrompt,
+  };
 }
 
 function requireApiKey(): string {
@@ -143,7 +206,8 @@ function requireApiKey(): string {
 
 export async function run(options: RunOptions): Promise<RunOutcome[]> {
   const { cwd, name, flags = {} } = options;
-  const { all, failOnRegression, ...configFlags } = flags;
+  const { all, failOnRegression, iterations: iterationsFlag, ...configFlags } = flags;
+  const iterations = iterationsFlag ?? 1;
 
   if (all) {
     const names = loadPromptNames(cwd);
@@ -160,6 +224,7 @@ export async function run(options: RunOptions): Promise<RunOutcome[]> {
         judgeModel: config.defaults.judgeModel,
         threshold: config.defaults.threshold,
         concurrency: config.defaults.concurrency,
+        iterations,
         respond: options.respond,
         judge: options.judge,
       });
@@ -190,6 +255,7 @@ export async function run(options: RunOptions): Promise<RunOutcome[]> {
     judgeModel: config.defaults.judgeModel,
     threshold: config.defaults.threshold,
     concurrency: config.defaults.concurrency,
+    iterations,
     respond: options.respond,
     judge: options.judge,
   });

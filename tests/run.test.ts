@@ -285,4 +285,57 @@ describe('run', () => {
     expect(names).toContain('alpha');
     expect(names).toContain('beta');
   });
+
+  test('--iterations aggregates multiple runs with mean and σ', async () => {
+    await setupTestProject();
+
+    let callCount = 0;
+    const varyingJudge: JudgeFn = async () => {
+      const scores = [0.8, 0.9, 1.0];
+      const score = scores[callCount % scores.length]!;
+      callCount++;
+      return {
+        passed: score >= 0.7,
+        score,
+        reasoning: 'OK',
+        inputTokens: 5,
+        outputTokens: 10,
+      };
+    };
+
+    const outcomes = await run({
+      cwd: project.baseDir,
+      respond: fakeRespond(),
+      judge: varyingJudge,
+      flags: { iterations: 3 },
+    });
+
+    const result = outcomes[0]!.result;
+    expect(result.results).toHaveLength(2);
+
+    for (const r of result.results) {
+      const extra = r as unknown as Record<string, unknown>;
+      expect(extra.iterations).toBe(3);
+      expect(typeof extra.σ).toBe('number');
+      expect(extra.σ).toBeGreaterThanOrEqual(0);
+    }
+
+    expect(result.passRate).toBe(1);
+  });
+
+  test('iterations=1 produces no σ or iterations fields', async () => {
+    await setupTestProject();
+
+    const outcomes = await run({
+      cwd: project.baseDir,
+      respond: fakeRespond(),
+      judge: fakeJudge(),
+      flags: { iterations: 1 },
+    });
+
+    const r = outcomes[0]!.result.results[0]!;
+    const extra = r as unknown as Record<string, unknown>;
+    expect('σ' in extra).toBe(false);
+    expect('iterations' in extra).toBe(false);
+  });
 });

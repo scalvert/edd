@@ -26,14 +26,26 @@ export function formatResults(outcome: RunOutcome, threshold: number): string {
   const { result, comparison, promptFile } = outcome;
   const lines: string[] = [];
 
-  lines.push(`Running ${result.results.length} test cases against ${promptFile}...`);
+  const first = result.results[0] as Record<string, unknown> | undefined;
+  const iterCount = first && 'iterations' in first ? (first.iterations as number) : undefined;
+  const iterLabel = iterCount ? ` \u00D7 ${iterCount} iterations` : '';
+
+  lines.push(`Running ${result.results.length} test cases${iterLabel} against ${promptFile}...`);
 
   for (const r of result.results) {
     const icon = r.passed ? '\u2713' : '\u2717';
-    const thresholdNote = r.passed ? '' : `, threshold: ${threshold.toFixed(2)}`;
-    lines.push(
-      `  ${icon} ${r.name}${' '.repeat(Math.max(1, 30 - r.name.length))}(score: ${r.score.toFixed(2)}${thresholdNote})`
-    );
+    const padding = ' '.repeat(Math.max(1, 30 - r.name.length));
+    const extra = r as unknown as Record<string, unknown>;
+
+    if ('σ' in extra) {
+      const thresholdNote = r.passed ? '' : `, threshold: ${threshold.toFixed(2)}`;
+      lines.push(
+        `  ${icon} ${r.name}${padding}(mean: ${r.score.toFixed(2)}, \u03C3: ${(extra.σ as number).toFixed(2)}, n=${extra.iterations}${thresholdNote})`
+      );
+    } else {
+      const thresholdNote = r.passed ? '' : `, threshold: ${threshold.toFixed(2)}`;
+      lines.push(`  ${icon} ${r.name}${padding}(score: ${r.score.toFixed(2)}${thresholdNote})`);
+    }
   }
 
   const passing = result.results.filter((r) => r.passed).length;
