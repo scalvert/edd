@@ -20,7 +20,7 @@ const ConfigFileSchema = z.object({
   prompts: z.record(z.string(), PromptEntrySchema).optional(),
 });
 
-const DEFAULTS = {
+export const DEFAULTS = {
   model: 'claude-haiku-4-5-20251001',
   judgeModel: 'claude-haiku-4-5-20251001',
   threshold: 0.7,

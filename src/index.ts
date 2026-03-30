@@ -1,5 +1,6 @@
 export { createProgram } from './program.js';
 export {
+  DEFAULTS,
   loadConfig,
   type ResolvedConfig,
   type ResolvedDefaults,
