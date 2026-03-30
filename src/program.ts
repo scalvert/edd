@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { init } from './commands/init.js';
 import { baseline } from './commands/baseline.js';
+import { demo } from './commands/demo.js';
 import { run, type RunFlags } from './commands/run.js';
 
 function getVersion(): string {
@@ -64,6 +65,14 @@ export function createProgram(): Command {
         all: cmdOptions.all as boolean | undefined,
       };
       await run({ cwd, name, flags });
+    });
+
+  program
+    .command('demo')
+    .description('Set up a demo project with sample prompt and test cases')
+    .action(async () => {
+      const cwd = program.opts().cwd as string;
+      await demo(cwd);
     });
 
   program

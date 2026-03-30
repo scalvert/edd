@@ -4,6 +4,7 @@ import ora from 'ora';
 import {
   type ResponseFn,
   type JudgeFn,
+  type Pricing,
   type RunResult,
   type CompareResult,
   runEval,
@@ -11,6 +12,12 @@ import {
   loadBaseline,
   compareRuns,
 } from '@scalvert/eval-core';
+
+const MODEL_PRICING: Record<string, Pricing> = {
+  'claude-haiku-4-5-20251001': { inputPerMillion: 0.8, outputPerMillion: 4 },
+  'claude-sonnet-4-5-20250514': { inputPerMillion: 3, outputPerMillion: 15 },
+  'claude-opus-4-20250514': { inputPerMillion: 15, outputPerMillion: 75 },
+};
 import { type CLIFlags, loadConfig, loadPromptNames, type ResolvedPrompt } from '../config.js';
 import { saveLastRun } from '../last-run.js';
 import { loadTestCases } from './test-cases.js';
@@ -142,6 +149,7 @@ async function runSinglePrompt(
     });
 
   const { iterations } = options;
+  const pricing = MODEL_PRICING[options.model];
   const relativePrompt = relative(options.cwd, prompt.prompt);
   const iterLabel = iterations > 1 ? ` \u00D7 ${iterations} iterations` : '';
   const spinnerText = `Running ${testCases.length} test cases${iterLabel} against ${relativePrompt}...`;
@@ -155,11 +163,13 @@ async function runSinglePrompt(
       let completed = 0;
       const runs = await Promise.all(
         Array.from({ length: iterations }, () =>
-          runEval({ testCases, respond, judge, concurrency: options.concurrency }).then((r) => {
-            completed++;
-            spinner.text = `Running ${testCases.length} test cases \u00D7 ${iterations} iterations (${completed}/${iterations} complete) against ${relativePrompt}...`;
-            return r;
-          })
+          runEval({ testCases, respond, judge, concurrency: options.concurrency, pricing }).then(
+            (r) => {
+              completed++;
+              spinner.text = `Running ${testCases.length} test cases \u00D7 ${iterations} iterations (${completed}/${iterations} complete) against ${relativePrompt}...`;
+              return r;
+            }
+          )
         )
       );
       result = aggregateRuns(runs, options.threshold, iterations);
@@ -169,6 +179,7 @@ async function runSinglePrompt(
         respond,
         judge,
         concurrency: options.concurrency,
+        pricing,
       });
     }
   } catch (error) {

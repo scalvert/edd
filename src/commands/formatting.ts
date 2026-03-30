@@ -78,8 +78,9 @@ export function formatResults(outcome: RunOutcome, threshold: number): string {
   }
 
   lines.push('');
+  const costSuffix = result.totalCostUsd > 0 ? ` \u00B7 ~${formatCost(result.totalCostUsd)}` : '';
   lines.push(
-    `  API usage: ${formatTokens(result.totalInputTokens)} input \u00B7 ${formatTokens(result.totalOutputTokens)} output \u00B7 ~${formatCost(result.totalCostUsd)}`
+    `  API usage: ${formatTokens(result.totalInputTokens)} input \u00B7 ${formatTokens(result.totalOutputTokens)} output${costSuffix}`
   );
 
   return lines.join('\n');

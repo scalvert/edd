@@ -1,0 +1,14 @@
+{
+  "defaults": {
+    "model": "claude-haiku-4-5-20251001",
+    "judgeModel": "claude-haiku-4-5-20251001",
+    "threshold": 0.7,
+    "concurrency": 5
+  },
+  "prompts": {
+    "customer-service": {
+      "prompt": "prompts/customer-service.md",
+      "tests": "tests/customer-service/"
+    }
+  }
+}
