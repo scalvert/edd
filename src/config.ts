@@ -119,3 +119,10 @@ export function loadConfig(options: {
 
   return { defaults, prompt };
 }
+
+export function loadPromptNames(cwd: string): string[] {
+  const configPath = join(cwd, 'edd.config.json');
+  const raw = existsSync(configPath) ? JSON.parse(readFileSync(configPath, 'utf8')) : {};
+  const configFile = ConfigFileSchema.parse(raw);
+  return Object.keys(configFile.prompts ?? {});
+}
