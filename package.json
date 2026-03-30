@@ -49,6 +49,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@scalvert/eval-core": "^0.5.1",
     "commander": "^14.0.3",
     "ora": "^9.3.0",
@@ -56,7 +57,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
     "@eslint/js": "^9.24.0",
     "@release-it-plugins/lerna-changelog": "^5.0.0",
     "@types/node": "^22.0.0",
@@ -74,14 +74,6 @@
     "typescript": "^5.4.0",
     "vite": "^7.3.0",
     "vitest": "^4.0.16"
-  },
-  "peerDependencies": {
-    "@anthropic-ai/sdk": ">=0.80.0"
-  },
-  "peerDependenciesMeta": {
-    "@anthropic-ai/sdk": {
-      "optional": true
-    }
   },
   "engines": {
     "node": ">=22"
