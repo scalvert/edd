@@ -1,0 +1,90 @@
+{
+  "name": "@scalvert/edd",
+  "version": "0.1.0",
+  "description": "Eval-Driven Development — prompt regression testing CLI",
+  "keywords": [
+    "llm",
+    "evaluation",
+    "testing",
+    "prompts",
+    "regression",
+    "cli"
+  ],
+  "homepage": "https://github.com/scalvert/edd#readme",
+  "bugs": {
+    "url": "https://github.com/scalvert/edd/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/scalvert/edd.git"
+  },
+  "license": "MIT",
+  "author": "Steve Calvert <steve.calvert@gmail.com>",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "edd": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "demo",
+    "skills"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . && npm run format:check",
+    "prepublishOnly": "npm run build",
+    "test": "npm run lint && npm run test:vitest",
+    "test:vitest": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@scalvert/eval-core": "^0.5.1",
+    "commander": "^14.0.3",
+    "package-up": "^5.0.0",
+    "zod": "^3.25.76"
+  },
+  "peerDependencies": {
+    "@anthropic-ai/sdk": ">=0.80.0"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/sdk": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@eslint/js": "^9.24.0",
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.29.1",
+    "@typescript-eslint/parser": "^8.29.1",
+    "bintastic": "^4.0.2",
+    "eslint": "^9.24.0",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-jsdoc": "^61.5.0",
+    "eslint-plugin-prettier": "^5.2.6",
+    "eslint-plugin-unicorn": "^62.0.0",
+    "prettier": "^3.5.3",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vite": "^7.3.0",
+    "vitest": "^4.0.16"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}
