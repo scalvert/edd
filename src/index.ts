@@ -8,6 +8,7 @@ export {
   type CLIFlags,
 } from './config.js';
 export { saveLastRun, loadLastRun } from './last-run.js';
+export { baseline, type BaselineOptions } from './commands/baseline.js';
 export { run, type RunOptions, type RunOutcome, type RunFlags } from './commands/run.js';
 export { loadTestCases } from './commands/test-cases.js';
 export { formatResults } from './commands/formatting.js';

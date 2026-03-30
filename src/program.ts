@@ -3,6 +3,7 @@ import { packageUpSync } from 'package-up';
 import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { init } from './commands/init.js';
+import { baseline } from './commands/baseline.js';
 import { run, type RunFlags } from './commands/run.js';
 
 function getVersion(): string {
@@ -63,6 +64,14 @@ export function createProgram(): Command {
         all: cmdOptions.all as boolean | undefined,
       };
       await run({ cwd, name, flags });
+    });
+
+  program
+    .command('baseline [name]')
+    .description('Promote last run to baseline')
+    .action(async (name: string | undefined) => {
+      const cwd = program.opts().cwd as string;
+      await baseline({ cwd, name });
     });
 
   return program;
