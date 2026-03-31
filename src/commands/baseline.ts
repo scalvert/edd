@@ -25,7 +25,15 @@ export async function baseline(options: BaselineOptions): Promise<void> {
   }
 
   const promptContent = await readFile(config.prompt.prompt, 'utf8');
-  const promptHash = createHash('sha256').update(promptContent).digest('hex');
+  const currentHash = createHash('sha256').update(promptContent).digest('hex');
+
+  if (lastRun.promptMetadata?.promptHash && lastRun.promptMetadata.promptHash !== currentHash) {
+    throw new Error(
+      'Prompt file has changed since the last run. Run `edd run` again before promoting to baseline.'
+    );
+  }
+
+  const promptHash = lastRun.promptMetadata?.promptHash ?? currentHash;
 
   const testCases = await loadTestCases(config.prompt.tests);
   const currentNames = new Set(testCases.map((tc) => tc.name));
@@ -41,7 +49,7 @@ export async function baseline(options: BaselineOptions): Promise<void> {
     );
   }
 
-  const result = { ...lastRun, promptHash };
+  const result = { ...lastRun, promptHash, promptMetadata: undefined };
   await saveBaseline(result, config.prompt.baseline);
 
   console.log(`Baseline saved to ${relative(cwd, config.prompt.baseline)}`);

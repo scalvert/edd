@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { relative } from 'node:path';
 import ora from 'ora';
@@ -19,7 +20,7 @@ const MODEL_PRICING: Record<string, Pricing> = {
   'claude-opus-4-20250514': { inputPerMillion: 15, outputPerMillion: 75 },
 };
 import { type CLIFlags, loadConfig, loadPromptNames, type ResolvedPrompt } from '../config.js';
-import { saveLastRun } from '../last-run.js';
+import { saveLastRun, type PromptMetadata } from '../last-run.js';
 import { loadTestCases } from './test-cases.js';
 import { formatResults, type RunOutcome } from './formatting.js';
 
@@ -189,7 +190,13 @@ async function runSinglePrompt(
 
   spinner.stop();
 
-  await saveLastRun(result, options.cwd);
+  const promptHash = createHash('sha256').update(systemPrompt).digest('hex');
+  const metadata: PromptMetadata = {
+    promptName: prompt.name,
+    promptPath: relativePrompt,
+    promptHash,
+  };
+  await saveLastRun(result, options.cwd, metadata);
 
   let comparison: CompareResult | undefined;
   const baseline = await loadBaseline(prompt.baseline);

@@ -7,7 +7,7 @@ export {
   type ResolvedPrompt,
   type CLIFlags,
 } from './config.js';
-export { saveLastRun, loadLastRun } from './last-run.js';
+export { saveLastRun, loadLastRun, type LastRunData, type PromptMetadata } from './last-run.js';
 export { baseline, type BaselineOptions } from './commands/baseline.js';
 export { demo } from './commands/demo.js';
 export { run, type RunOptions, type RunOutcome, type RunFlags } from './commands/run.js';

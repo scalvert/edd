@@ -1,11 +1,11 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createBintastic, type BintasticProject } from 'bintastic';
 import type { RunResult } from '@scalvert/eval-core';
 import { baseline } from '../src/commands/baseline.js';
-import { saveLastRun } from '../src/last-run.js';
+import { saveLastRun, type PromptMetadata } from '../src/last-run.js';
 
 const { setupProject, teardownProject } = createBintastic({
   binPath: new URL('../dist/cli.js', import.meta.url).pathname,
@@ -91,7 +91,12 @@ async function setupBaselineProject(lastRun?: RunResult) {
   await project.write();
 
   if (lastRun) {
-    await saveLastRun(lastRun, project.baseDir);
+    const metadata: PromptMetadata = {
+      promptName: 'test-prompt',
+      promptPath: 'prompts/test-prompt.md',
+      promptHash: createHash('sha256').update(promptContent).digest('hex'),
+    };
+    await saveLastRun(lastRun, project.baseDir, metadata);
   }
 }
 
@@ -160,5 +165,31 @@ describe('baseline', () => {
       readFileSync(join(project.baseDir, 'baselines', 'test-prompt.json'), 'utf8')
     );
     expect(saved.runId).toBe('run-1');
+  });
+
+  test('throws when prompt content changed since last run', async () => {
+    await setupBaselineProject(makeLastRun());
+
+    writeFileSync(
+      join(project.baseDir, 'prompts', 'test-prompt.md'),
+      'You are a DIFFERENT assistant now.'
+    );
+
+    await expect(baseline({ cwd: project.baseDir })).rejects.toThrow(
+      /Prompt file has changed since the last run/
+    );
+  });
+
+  test('baseline uses run-time hash when prompt is unchanged', async () => {
+    await setupBaselineProject(makeLastRun());
+
+    await baseline({ cwd: project.baseDir });
+
+    const saved = JSON.parse(
+      readFileSync(join(project.baseDir, 'baselines', 'test-prompt.json'), 'utf8')
+    );
+    const expectedHash = createHash('sha256').update(promptContent).digest('hex');
+    expect(saved.promptHash).toBe(expectedHash);
+    expect(saved.promptMetadata).toBeUndefined();
   });
 });
