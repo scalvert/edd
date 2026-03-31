@@ -3,8 +3,9 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createBintastic, type BintasticProject } from 'bintastic';
-import type { RunResult } from '@scalvert/eval-core';
+import type { RunResult, ResponseFn, JudgeFn } from '@scalvert/eval-core';
 import { baseline } from '../src/commands/baseline.js';
+import { run } from '../src/commands/run.js';
 import { saveLastRun } from '../src/last-run.js';
 
 const { setupProject, teardownProject } = createBintastic({
@@ -162,5 +163,122 @@ describe('baseline', () => {
       readFileSync(join(project.baseDir, 'baselines', 'test-prompt.json'), 'utf8')
     );
     expect(saved.runId).toBe('run-1');
+  });
+});
+
+describe('run --all + baseline interaction', () => {
+  function fakeRespond(): ResponseFn {
+    return async () => ({
+      response: 'Hello!',
+      inputTokens: 10,
+      outputTokens: 20,
+    });
+  }
+
+  function fakeJudge(): JudgeFn {
+    return async () => ({
+      passed: true,
+      score: 0.9,
+      reasoning: 'Good',
+      inputTokens: 5,
+      outputTokens: 10,
+    });
+  }
+
+  async function setupMultiPromptProject() {
+    const config = {
+      prompts: {
+        alpha: { prompt: 'prompts/alpha.md', tests: 'tests/alpha/' },
+        beta: { prompt: 'prompts/beta.md', tests: 'tests/beta/' },
+      },
+    };
+
+    project.mergeFiles({
+      'edd.config.json': JSON.stringify(config),
+      prompts: {
+        'alpha.md': 'You are alpha.',
+        'beta.md': 'You are beta.',
+      },
+      tests: {
+        alpha: {
+          'cases.json': JSON.stringify([
+            { name: 'a-test', input: 'Hello', rubric: 'Is a greeting' },
+          ]),
+        },
+        beta: {
+          'cases.json': JSON.stringify([
+            { name: 'b-test', input: 'Goodbye', rubric: 'Is a farewell' },
+          ]),
+        },
+      },
+    });
+    await project.write();
+  }
+
+  test('baseline alpha promotes only alpha after run --all', async () => {
+    await setupMultiPromptProject();
+
+    await run({
+      cwd: project.baseDir,
+      respond: fakeRespond(),
+      judge: fakeJudge(),
+      flags: { all: true },
+    });
+
+    await baseline({ cwd: project.baseDir, name: 'alpha' });
+
+    const saved = JSON.parse(
+      readFileSync(join(project.baseDir, 'baselines', 'alpha.json'), 'utf8')
+    );
+    expect(saved.results).toHaveLength(1);
+    expect(saved.results[0].name).toBe('a-test');
+  });
+
+  test('baseline beta promotes only beta after run --all', async () => {
+    await setupMultiPromptProject();
+
+    await run({
+      cwd: project.baseDir,
+      respond: fakeRespond(),
+      judge: fakeJudge(),
+      flags: { all: true },
+    });
+
+    await baseline({ cwd: project.baseDir, name: 'beta' });
+
+    const saved = JSON.parse(readFileSync(join(project.baseDir, 'baselines', 'beta.json'), 'utf8'));
+    expect(saved.results).toHaveLength(1);
+    expect(saved.results[0].name).toBe('b-test');
+  });
+
+  test('baseline for unrun prompt fails after run --all of different prompts', async () => {
+    await setupMultiPromptProject();
+
+    const config = {
+      prompts: {
+        alpha: { prompt: 'prompts/alpha.md', tests: 'tests/alpha/' },
+        beta: { prompt: 'prompts/beta.md', tests: 'tests/beta/' },
+        gamma: { prompt: 'prompts/gamma.md', tests: 'tests/gamma/' },
+      },
+    };
+    project.mergeFiles({
+      'edd.config.json': JSON.stringify(config),
+      prompts: { 'gamma.md': 'You are gamma.' },
+      tests: {
+        gamma: {
+          'cases.json': JSON.stringify([{ name: 'g-test', input: 'Test', rubric: 'Is a test' }]),
+        },
+      },
+    });
+    await project.write();
+
+    await run({
+      cwd: project.baseDir,
+      respond: fakeRespond(),
+      judge: fakeJudge(),
+      flags: { all: true },
+    });
+
+    await expect(baseline({ cwd: project.baseDir, name: 'gamma' })).resolves.not.toThrow();
   });
 });
