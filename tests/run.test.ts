@@ -103,7 +103,7 @@ describe('run', () => {
       judge: fakeJudge(),
     });
 
-    expect(existsSync(join(project.baseDir, '.edd', 'last-run.json'))).toBe(true);
+    expect(existsSync(join(project.baseDir, '.edd', 'last-run', 'test-prompt.json'))).toBe(true);
   });
 
   test('compares against baseline when it exists', async () => {

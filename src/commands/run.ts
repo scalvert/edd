@@ -189,7 +189,7 @@ async function runSinglePrompt(
 
   spinner.stop();
 
-  await saveLastRun(result, options.cwd);
+  await saveLastRun(result, options.cwd, prompt.name);
 
   let comparison: CompareResult | undefined;
   const baseline = await loadBaseline(prompt.baseline);

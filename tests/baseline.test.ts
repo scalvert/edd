@@ -91,7 +91,7 @@ async function setupBaselineProject(lastRun?: RunResult) {
   await project.write();
 
   if (lastRun) {
-    await saveLastRun(lastRun, project.baseDir);
+    await saveLastRun(lastRun, project.baseDir, 'test-prompt');
   }
 }
 
@@ -99,7 +99,9 @@ describe('baseline', () => {
   test('throws when no last run exists', async () => {
     await setupBaselineProject();
 
-    await expect(baseline({ cwd: project.baseDir })).rejects.toThrow(/No last run found/);
+    await expect(baseline({ cwd: project.baseDir })).rejects.toThrow(
+      /No last run found for prompt "test-prompt"/
+    );
   });
 
   test('saves baseline with promptHash', async () => {
