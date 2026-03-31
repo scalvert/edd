@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import { Command, InvalidArgumentError } from 'commander';
 import { packageUpSync } from 'package-up';
 import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -6,6 +6,24 @@ import { init } from './commands/init.js';
 import { baseline } from './commands/baseline.js';
 import { demo } from './commands/demo.js';
 import { run, type RunFlags } from './commands/run.js';
+
+function parseThreshold(value: string): number {
+  const n = parseFloat(value);
+  if (Number.isNaN(n) || n < 0 || n > 1) {
+    throw new InvalidArgumentError('Threshold must be a number between 0 and 1.');
+  }
+  return n;
+}
+
+function parsePositiveInt(name: string) {
+  return (value: string): number => {
+    const n = parseInt(value, 10);
+    if (Number.isNaN(n) || n < 1) {
+      throw new InvalidArgumentError(`${name} must be a positive integer.`);
+    }
+    return n;
+  };
+}
 
 function getVersion(): string {
   const pkgPath = packageUpSync({ cwd: dirname(import.meta.dirname!) });
@@ -41,10 +59,14 @@ export function createProgram(): Command {
     .option('--prompt <path>', 'path to prompt file')
     .option('--tests <path>', 'path to tests directory')
     .option('--baseline <path>', 'path to baseline file')
-    .option('--threshold <n>', 'score threshold', parseFloat)
-    .option('--concurrency <n>', 'max concurrent evals', parseInt)
+    .option('--threshold <n>', 'score threshold (0-1)', parseThreshold)
+    .option('--concurrency <n>', 'max concurrent evals', parsePositiveInt('Concurrency'))
     .option('--fail-on-regression', 'exit 1 if regressions detected')
-    .option('--iterations <n>', 'number of eval iterations for statistical confidence', parseInt)
+    .option(
+      '--iterations <n>',
+      'number of eval iterations for statistical confidence',
+      parsePositiveInt('Iterations')
+    )
     .option('--all', 'run all configured prompts')
     .action(async (name: string | undefined, cmdOptions: Record<string, unknown>) => {
       const cwd = program.opts().cwd as string;
