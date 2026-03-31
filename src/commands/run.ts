@@ -18,7 +18,13 @@ const MODEL_PRICING: Record<string, Pricing> = {
   'claude-sonnet-4-5-20250514': { inputPerMillion: 3, outputPerMillion: 15 },
   'claude-opus-4-20250514': { inputPerMillion: 15, outputPerMillion: 75 },
 };
-import { type CLIFlags, loadConfig, loadPromptNames, type ResolvedPrompt } from '../config.js';
+import {
+  type CLIFlags,
+  type PathOverrides,
+  loadConfig,
+  loadPromptNames,
+  type ResolvedPrompt,
+} from '../config.js';
 import { saveLastRun } from '../last-run.js';
 import { loadTestCases } from './test-cases.js';
 import { formatResults, type RunOutcome } from './formatting.js';
@@ -217,8 +223,21 @@ function requireApiKey(): string {
 
 export async function run(options: RunOptions): Promise<RunOutcome[]> {
   const { cwd, name, flags = {} } = options;
-  const { all, failOnRegression, iterations: iterationsFlag, ...configFlags } = flags;
+  const {
+    all,
+    failOnRegression,
+    iterations: iterationsFlag,
+    prompt: promptOverride,
+    tests: testsOverride,
+    baseline: baselineOverride,
+    ...configFlags
+  } = flags;
   const iterations = iterationsFlag ?? 1;
+  const pathOverrides: PathOverrides = {
+    ...(promptOverride ? { prompt: promptOverride } : {}),
+    ...(testsOverride ? { tests: testsOverride } : {}),
+    ...(baselineOverride ? { baseline: baselineOverride } : {}),
+  };
 
   if (all) {
     const names = loadPromptNames(cwd);
@@ -228,7 +247,7 @@ export async function run(options: RunOptions): Promise<RunOutcome[]> {
 
     const outcomes: RunOutcome[] = [];
     for (const promptName of names) {
-      const config = loadConfig({ cwd, name: promptName, flags: configFlags });
+      const config = loadConfig({ cwd, name: promptName, flags: configFlags, pathOverrides });
       const outcome = await runSinglePrompt(config.prompt!, {
         cwd,
         model: config.defaults.model,
@@ -254,7 +273,7 @@ export async function run(options: RunOptions): Promise<RunOutcome[]> {
     return outcomes;
   }
 
-  const config = loadConfig({ cwd, name, flags: configFlags });
+  const config = loadConfig({ cwd, name, flags: configFlags, pathOverrides });
 
   if (!config.prompt) {
     throw new Error('No prompts configured in edd.config.json');

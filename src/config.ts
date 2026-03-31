@@ -48,6 +48,12 @@ export interface CLIFlags {
   concurrency?: number;
 }
 
+export interface PathOverrides {
+  prompt?: string;
+  tests?: string;
+  baseline?: string;
+}
+
 export interface ResolvedConfig {
   defaults: ResolvedDefaults;
   prompt?: ResolvedPrompt;
@@ -102,8 +108,9 @@ export function loadConfig(options: {
   cwd: string;
   name?: string;
   flags?: CLIFlags;
+  pathOverrides?: PathOverrides;
 }): ResolvedConfig {
-  const { cwd, name, flags = {} } = options;
+  const { cwd, name, flags = {}, pathOverrides = {} } = options;
   const configPath = join(cwd, 'edd.config.json');
 
   const raw = existsSync(configPath) ? JSON.parse(readFileSync(configPath, 'utf8')) : {};
@@ -115,7 +122,16 @@ export function loadConfig(options: {
     ...stripUndefined(flags),
   } as ResolvedDefaults;
 
-  const prompt = configFile.prompts ? resolvePrompt(configFile.prompts, name, cwd) : undefined;
+  let prompt = configFile.prompts ? resolvePrompt(configFile.prompts, name, cwd) : undefined;
+
+  if (prompt && Object.keys(stripUndefined(pathOverrides)).length > 0) {
+    prompt = {
+      ...prompt,
+      ...(pathOverrides.prompt ? { prompt: resolve(cwd, pathOverrides.prompt) } : {}),
+      ...(pathOverrides.tests ? { tests: resolve(cwd, pathOverrides.tests) } : {}),
+      ...(pathOverrides.baseline ? { baseline: resolve(cwd, pathOverrides.baseline) } : {}),
+    };
+  }
 
   return { defaults, prompt };
 }

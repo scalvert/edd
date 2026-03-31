@@ -323,6 +323,44 @@ describe('run', () => {
     expect(result.passRate).toBe(1);
   });
 
+  test('--prompt/--tests/--baseline override configured paths', async () => {
+    const config = {
+      prompts: {
+        'test-prompt': {
+          prompt: 'prompts/test-prompt.md',
+          tests: 'tests/test-prompt/',
+        },
+      },
+    };
+
+    project.mergeFiles({
+      'edd.config.json': JSON.stringify(config),
+      'custom-prompts': {
+        'alt.md': 'You are an alternative assistant.',
+      },
+      'custom-tests': {
+        'cases.json': JSON.stringify([
+          { name: 'custom-case', input: 'Hello', rubric: 'Contains a greeting' },
+        ]),
+      },
+    });
+    await project.write();
+
+    const outcomes = await run({
+      cwd: project.baseDir,
+      respond: fakeRespond(),
+      judge: fakeJudge(),
+      flags: {
+        prompt: 'custom-prompts/alt.md',
+        tests: 'custom-tests/',
+      },
+    });
+
+    expect(outcomes).toHaveLength(1);
+    expect(outcomes[0]!.result.results).toHaveLength(1);
+    expect(outcomes[0]!.result.results[0]!.name).toBe('custom-case');
+  });
+
   test('iterations=1 produces no σ or iterations fields', async () => {
     await setupTestProject();
 
