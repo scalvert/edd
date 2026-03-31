@@ -153,7 +153,33 @@ describe('baseline', () => {
 
     await baseline({ cwd: project.baseDir });
 
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Test suite has changed'));
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/Test suite has changed.*added: greeting, farewell.*removed: old-test/)
+    );
+  });
+
+  test('throws when last run prompt name does not match selected prompt', async () => {
+    await setupBaselineProject(makeLastRun());
+
+    const config = {
+      prompts: {
+        'test-prompt': { prompt: 'prompts/test-prompt.md', tests: 'tests/test-prompt/' },
+        other: { prompt: 'prompts/test-prompt.md', tests: 'tests/test-prompt/' },
+      },
+    };
+    project.mergeFiles({ 'edd.config.json': JSON.stringify(config) });
+    await project.write();
+
+    const metadata: PromptMetadata = {
+      promptName: 'test-prompt',
+      promptPath: 'prompts/test-prompt.md',
+      promptHash: createHash('sha256').update(promptContent).digest('hex'),
+    };
+    await saveLastRun(makeLastRun(), project.baseDir, metadata);
+
+    await expect(baseline({ cwd: project.baseDir, name: 'other' })).rejects.toThrow(
+      /Last run was for prompt "test-prompt", not "other"/
+    );
   });
 
   test('auto-selects single prompt without name argument', async () => {
