@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { relative } from 'node:path';
 import ora from 'ora';
@@ -25,7 +26,7 @@ import {
   loadPromptNames,
   type ResolvedPrompt,
 } from '../config.js';
-import { saveLastRun } from '../last-run.js';
+import { saveLastRun, type PromptMetadata } from '../last-run.js';
 import { loadTestCases } from './test-cases.js';
 import { formatResults, type RunOutcome } from './formatting.js';
 
@@ -195,7 +196,13 @@ async function runSinglePrompt(
 
   spinner.stop();
 
-  await saveLastRun(result, options.cwd, prompt.name);
+  const promptHash = createHash('sha256').update(systemPrompt).digest('hex');
+  const metadata: PromptMetadata = {
+    promptName: prompt.name,
+    promptPath: relativePrompt,
+    promptHash,
+  };
+  await saveLastRun(result, options.cwd, prompt.name, metadata);
 
   let comparison: CompareResult | undefined;
   const baseline = await loadBaseline(prompt.baseline);
