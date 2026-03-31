@@ -1,6 +1,6 @@
 {
   "name": "@scalvert/edd",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Eval-Driven Development — prompt regression testing CLI",
   "keywords": [
     "llm",
