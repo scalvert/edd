@@ -160,18 +160,18 @@ async function runSinglePrompt(
   let result: RunResult;
   try {
     if (iterations > 1) {
-      let completed = 0;
-      const runs = await Promise.all(
-        Array.from({ length: iterations }, () =>
-          runEval({ testCases, respond, judge, concurrency: options.concurrency, pricing }).then(
-            (r) => {
-              completed++;
-              spinner.text = `Running ${testCases.length} test cases \u00D7 ${iterations} iterations (${completed}/${iterations} complete) against ${relativePrompt}...`;
-              return r;
-            }
-          )
-        )
-      );
+      const runs: RunResult[] = [];
+      for (let i = 0; i < iterations; i++) {
+        const r = await runEval({
+          testCases,
+          respond,
+          judge,
+          concurrency: options.concurrency,
+          pricing,
+        });
+        runs.push(r);
+        spinner.text = `Running ${testCases.length} test cases \u00D7 ${iterations} iterations (${i + 1}/${iterations} complete) against ${relativePrompt}...`;
+      }
       result = aggregateRuns(runs, options.threshold, iterations);
     } else {
       result = await runEval({
