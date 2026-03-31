@@ -34,6 +34,7 @@ Identify the root cause. Common patterns:
 
 Make a targeted edit to the prompt file. Follow these principles:
 
+- **Always fix the prompt, not the tests.** Tests define the behavioral contract. Edit the prompt to satisfy the failing rubric. Do not modify test cases or rubrics unless the user explicitly says the prompt change was intentional and the tests should be updated to match.
 - **Fix only what's broken.** Don't restructure the prompt or "improve" unrelated sections.
 - **Preserve passing behavior.** Before editing, identify which prompt instructions the passing tests depend on. Don't weaken those.
 - **Be specific.** If the rubric says "must not reveal personal information," the prompt needs an explicit rule about personal information, not just "be careful with data."
