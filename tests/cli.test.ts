@@ -59,4 +59,57 @@ describe('edd cli', () => {
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain('Iterations must be a positive integer');
   });
+
+  test('run without config shows clear error', async () => {
+    const result = await runBin('run', '--cwd', project.baseDir);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('No prompts configured');
+  });
+
+  test('baseline without prior run shows clear error', async () => {
+    project.mergeFiles({
+      'edd.config.json': JSON.stringify({
+        prompts: {
+          test: { prompt: 'prompts/test.md', tests: 'tests/test/' },
+        },
+      }),
+    });
+    await project.write();
+
+    const result = await runBin('baseline', '--cwd', project.baseDir);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('No last run found');
+  });
+
+  test('run with missing prompt file shows clear error', async () => {
+    project.mergeFiles({
+      'edd.config.json': JSON.stringify({
+        prompts: {
+          test: { prompt: 'prompts/nonexistent.md', tests: 'tests/test/' },
+        },
+      }),
+    });
+    await project.write();
+
+    const result = await runBin('run', '--cwd', project.baseDir);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('Prompt file not found');
+  });
+
+  test('run help shows all options', async () => {
+    const result = await runBin('run', '--help');
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain('--prompt');
+    expect(result.stdout).toContain('--tests');
+    expect(result.stdout).toContain('--baseline');
+    expect(result.stdout).toContain('--threshold');
+    expect(result.stdout).toContain('--concurrency');
+    expect(result.stdout).toContain('--iterations');
+    expect(result.stdout).toContain('--all');
+    expect(result.stdout).toContain('--fail-on-regression');
+  });
 });
