@@ -149,5 +149,88 @@ describe('loadConfig', () => {
       expect(result.prompt?.tests).toBe(resolve(project.baseDir, 'tests/test/'));
       expect(result.prompt?.baseline).toBe(resolve(project.baseDir, 'baselines/test.json'));
     });
+
+    test('pathOverrides override configured prompt paths', async () => {
+      await writeConfig({
+        prompts: {
+          alpha: {
+            prompt: 'prompts/alpha.md',
+            tests: 'tests/alpha/',
+            baseline: 'baselines/alpha.json',
+          },
+        },
+      });
+
+      const result = loadConfig({
+        cwd: project.baseDir,
+        pathOverrides: {
+          prompt: 'custom/prompt.md',
+          tests: 'custom/tests/',
+          baseline: 'custom/baseline.json',
+        },
+      });
+
+      expect(result.prompt?.prompt).toBe(resolve(project.baseDir, 'custom/prompt.md'));
+      expect(result.prompt?.tests).toBe(resolve(project.baseDir, 'custom/tests/'));
+      expect(result.prompt?.baseline).toBe(resolve(project.baseDir, 'custom/baseline.json'));
+    });
+
+    test('pathOverrides work with named prompts', async () => {
+      await writeConfig({
+        prompts: {
+          alpha: { prompt: 'prompts/alpha.md', tests: 'tests/alpha/' },
+          beta: { prompt: 'prompts/beta.md', tests: 'tests/beta/' },
+        },
+      });
+
+      const result = loadConfig({
+        cwd: project.baseDir,
+        name: 'beta',
+        pathOverrides: { prompt: 'override/prompt.md' },
+      });
+
+      expect(result.prompt?.name).toBe('beta');
+      expect(result.prompt?.prompt).toBe(resolve(project.baseDir, 'override/prompt.md'));
+      expect(result.prompt?.tests).toBe(resolve(project.baseDir, 'tests/beta/'));
+    });
+
+    test('partial pathOverrides only replace specified fields', async () => {
+      await writeConfig({
+        prompts: {
+          test: {
+            prompt: 'prompts/test.md',
+            tests: 'tests/test/',
+            baseline: 'baselines/test.json',
+          },
+        },
+      });
+
+      const result = loadConfig({
+        cwd: project.baseDir,
+        pathOverrides: { tests: 'other-tests/' },
+      });
+
+      expect(result.prompt?.prompt).toBe(resolve(project.baseDir, 'prompts/test.md'));
+      expect(result.prompt?.tests).toBe(resolve(project.baseDir, 'other-tests/'));
+      expect(result.prompt?.baseline).toBe(resolve(project.baseDir, 'baselines/test.json'));
+    });
+
+    test('pathOverrides do not leak into defaults', async () => {
+      await writeConfig({
+        prompts: {
+          test: { prompt: 'prompts/test.md', tests: 'tests/test/' },
+        },
+      });
+
+      const result = loadConfig({
+        cwd: project.baseDir,
+        pathOverrides: { prompt: 'x.md', tests: 'y/', baseline: 'z.json' },
+      });
+
+      const defaultsObj = result.defaults as Record<string, unknown>;
+      expect(defaultsObj).not.toHaveProperty('prompt');
+      expect(defaultsObj).not.toHaveProperty('tests');
+      expect(defaultsObj).not.toHaveProperty('baseline');
+    });
   });
 });
