@@ -31,7 +31,7 @@ export async function baseline(options: BaselineOptions): Promise<void> {
 
   if (lastRun.promptMetadata?.promptHash && lastRun.promptMetadata.promptHash !== currentHash) {
     throw new Error(
-      'Prompt file has changed since the last run. Run `edd run` again before promoting to baseline.'
+      `Prompt file has changed since the last run. Run \`edd run ${config.prompt.name}\` again before promoting to baseline.`
     );
   }
 
@@ -42,7 +42,14 @@ export async function baseline(options: BaselineOptions): Promise<void> {
   const runNames = new Set(lastRun.results.map((r) => r.name));
 
   if (currentNames.size !== runNames.size || [...currentNames].some((n) => !runNames.has(n))) {
-    console.warn('Warning: Test suite has changed since the last run.');
+    const added = [...currentNames].filter((n) => !runNames.has(n));
+    const removed = [...runNames].filter((n) => !currentNames.has(n));
+    const parts: string[] = [];
+    if (added.length > 0) parts.push(`added: ${added.join(', ')}`);
+    if (removed.length > 0) parts.push(`removed: ${removed.join(', ')}`);
+    console.warn(
+      `Warning: Test suite has changed since the last run (${parts.join('; ')}). Run \`edd run ${config.prompt.name}\` to update.`
+    );
   }
 
   if (lastRun.passRate < config.defaults.threshold) {

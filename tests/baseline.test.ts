@@ -156,7 +156,9 @@ describe('baseline', () => {
 
     await baseline({ cwd: project.baseDir });
 
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Test suite has changed'));
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/Test suite has changed.*added: greeting, farewell.*removed: old-test/)
+    );
   });
 
   test('auto-selects single prompt without name argument', async () => {
