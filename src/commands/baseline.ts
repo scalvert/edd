@@ -19,9 +19,11 @@ export async function baseline(options: BaselineOptions): Promise<void> {
     throw new Error('No prompts configured in edd.config.json');
   }
 
-  const lastRun = await loadLastRun(cwd);
+  const lastRun = await loadLastRun(cwd, config.prompt.name);
   if (!lastRun) {
-    throw new Error('No last run found. Run `edd run` first.');
+    throw new Error(
+      `No last run found for prompt "${config.prompt.name}". Run \`edd run ${config.prompt.name}\` first.`
+    );
   }
 
   const promptContent = await readFile(config.prompt.prompt, 'utf8');

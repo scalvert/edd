@@ -2,17 +2,24 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { type RunResult, RunResultSchema } from '@scalvert/eval-core';
 
-const LAST_RUN_DIR = '.edd';
-const LAST_RUN_FILE = 'last-run.json';
+const LAST_RUN_DIR = '.edd/last-run';
 
-export async function saveLastRun(result: RunResult, cwd: string): Promise<void> {
-  const dirPath = join(cwd, LAST_RUN_DIR);
-  await mkdir(dirPath, { recursive: true });
-  await writeFile(join(dirPath, LAST_RUN_FILE), JSON.stringify(result, null, 2));
+function lastRunPath(cwd: string, promptName: string): string {
+  return join(cwd, LAST_RUN_DIR, `${promptName}.json`);
 }
 
-export async function loadLastRun(cwd: string): Promise<RunResult | null> {
-  const filePath = join(cwd, LAST_RUN_DIR, LAST_RUN_FILE);
+export async function saveLastRun(
+  result: RunResult,
+  cwd: string,
+  promptName: string
+): Promise<void> {
+  const dirPath = join(cwd, LAST_RUN_DIR);
+  await mkdir(dirPath, { recursive: true });
+  await writeFile(lastRunPath(cwd, promptName), JSON.stringify(result, null, 2));
+}
+
+export async function loadLastRun(cwd: string, promptName: string): Promise<RunResult | null> {
+  const filePath = lastRunPath(cwd, promptName);
 
   let content: string;
   try {
