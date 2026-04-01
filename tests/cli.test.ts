@@ -5,7 +5,6 @@ const { setupProject, teardownProject, runBin } = createBintastic({
   binPath: new URL('../dist/cli.js', import.meta.url).pathname,
 });
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let project: BintasticProject;
 
 beforeEach(async () => {
