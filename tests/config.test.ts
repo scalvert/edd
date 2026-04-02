@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { createBintastic, type BintasticProject } from 'bintastic';
-import { loadConfig } from '../src/config.js';
+import { loadConfig, loadPromptNames } from '../src/config.js';
 
 const { setupProject, teardownProject } = createBintastic({
   binPath: new URL('../dist/cli.js', import.meta.url).pathname,
@@ -215,6 +215,42 @@ describe('loadConfig', () => {
       expect(result.prompt?.baseline).toBe(resolve(project.baseDir, 'baselines/test.json'));
     });
 
+    test('throws on invalid config schema', async () => {
+      await writeConfig({
+        defaults: { threshold: 'not-a-number' },
+      });
+
+      expect(() => loadConfig({ cwd: project.baseDir })).toThrow();
+    });
+  });
+
+  describe('loadPromptNames', () => {
+    test('returns prompt names from config', async () => {
+      await writeConfig({
+        prompts: {
+          alpha: { prompt: 'prompts/alpha.md', tests: 'tests/alpha/' },
+          beta: { prompt: 'prompts/beta.md', tests: 'tests/beta/' },
+        },
+      });
+
+      const names = loadPromptNames(project.baseDir);
+      expect(names).toEqual(['alpha', 'beta']);
+    });
+
+    test('returns empty array when no prompts configured', async () => {
+      await writeConfig({});
+
+      const names = loadPromptNames(project.baseDir);
+      expect(names).toEqual([]);
+    });
+
+    test('returns empty array when no config file exists', () => {
+      const names = loadPromptNames(project.baseDir);
+      expect(names).toEqual([]);
+    });
+  });
+
+  describe('path overrides', () => {
     test('pathOverrides do not leak into defaults', async () => {
       await writeConfig({
         prompts: {
