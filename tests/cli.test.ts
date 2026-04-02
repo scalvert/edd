@@ -71,6 +71,13 @@ describe('edd cli', () => {
     expect(result.stderr).not.toContain('Threshold must be a number between 0 and 1');
   });
 
+  test('--all rejects --prompt flag', async () => {
+    const result = await runBin('run', '--all', '--prompt', 'foo.md', '--cwd', project.baseDir);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('Cannot use --prompt, --tests, or --baseline with --all');
+  });
+
   test('run without config shows clear error', async () => {
     const result = await runBin('run', '--cwd', project.baseDir);
 

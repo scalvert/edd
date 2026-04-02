@@ -494,6 +494,19 @@ describe('run', () => {
     expect(existsSync(join(project.baseDir, '.edd', 'last-run', 'beta.json'))).toBe(true);
   });
 
+  test('--all rejects --prompt, --tests, and --baseline flags', async () => {
+    await setupTestProject();
+
+    await expect(
+      run({
+        cwd: project.baseDir,
+        respond: fakeRespond(),
+        judge: fakeJudge(),
+        flags: { all: true, prompt: 'some-prompt.md' },
+      })
+    ).rejects.toThrow(/Cannot use --prompt, --tests, or --baseline with --all/);
+  });
+
   test('iterations=1 produces no σ or iterations fields', async () => {
     await setupTestProject();
 

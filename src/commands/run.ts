@@ -248,6 +248,10 @@ export async function run(options: RunOptions): Promise<RunOutcome[]> {
   };
 
   if (all) {
+    if (promptOverride || testsOverride || baselineOverride) {
+      throw new Error('Cannot use --prompt, --tests, or --baseline with --all');
+    }
+
     const names = loadPromptNames(cwd);
     if (names.length === 0) {
       throw new Error('No prompts configured in edd.config.json');
