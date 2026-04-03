@@ -1,3 +1,22 @@
+## v0.5.4 (2026-04-03)
+
+#### :bug: Bug Fix
+
+- [#15](https://github.com/scalvert/edd/pull/15) Reject --all combined with path override flags ([@scalvert](https://github.com/scalvert))
+- [#14](https://github.com/scalvert/edd/pull/14) Validate API key before constructing judge ([@scalvert](https://github.com/scalvert))
+- [#16](https://github.com/scalvert/edd/pull/16) Use sample variance (Bessel's correction) in aggregateRuns ([@scalvert](https://github.com/scalvert))
+
+#### :house: Internal
+
+- [#13](https://github.com/scalvert/edd/pull/13) Add typecheck step to CI workflow ([@scalvert](https://github.com/scalvert))
+- [#17](https://github.com/scalvert/edd/pull/17) Add test coverage for untested paths and edge cases ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+
+- Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
+
 ## v0.5.3 (2026-04-01)
 
 #### :bug: Bug Fix
