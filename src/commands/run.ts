@@ -95,7 +95,8 @@ function aggregateRuns(runs: RunResult[], threshold: number, iterations: number)
 
   const results = [...nameToScores.entries()].map(([name, { scores, result }]) => {
     const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
-    const variance = scores.reduce((a, s) => a + (s - mean) ** 2, 0) / scores.length;
+    const sumSqDiff = scores.reduce((a, s) => a + (s - mean) ** 2, 0);
+    const variance = scores.length > 1 ? sumSqDiff / (scores.length - 1) : 0;
     const σ = Math.sqrt(variance);
     return {
       ...result,
