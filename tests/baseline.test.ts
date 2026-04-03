@@ -284,7 +284,7 @@ describe('run --all + baseline interaction', () => {
     expect(saved.results[0].name).toBe('b-test');
   });
 
-  test('baseline for unrun prompt fails after run --all of different prompts', async () => {
+  test('baseline succeeds for prompt included in run --all', async () => {
     await setupMultiPromptProject();
 
     const config = {

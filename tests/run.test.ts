@@ -361,6 +361,139 @@ describe('run', () => {
     expect(outcomes[0]!.result.results[0]!.name).toBe('custom-case');
   });
 
+  test('--all with --fail-on-regression throws on regressions', async () => {
+    const config = {
+      prompts: {
+        alpha: { prompt: 'prompts/alpha.md', tests: 'tests/alpha/' },
+        beta: { prompt: 'prompts/beta.md', tests: 'tests/beta/' },
+      },
+    };
+
+    project.mergeFiles({
+      'edd.config.json': JSON.stringify(config),
+      prompts: {
+        'alpha.md': 'You are alpha.',
+        'beta.md': 'You are beta.',
+      },
+      tests: {
+        alpha: {
+          'cases.json': JSON.stringify([
+            { name: 'a-test', input: 'Hello', rubric: 'Is a greeting' },
+          ]),
+        },
+        beta: {
+          'cases.json': JSON.stringify([
+            { name: 'b-test', input: 'Goodbye', rubric: 'Is a farewell' },
+          ]),
+        },
+      },
+    });
+    await project.write();
+
+    await saveBaseline(
+      {
+        runId: 'baseline-1',
+        timestamp: '2026-01-01T00:00:00.000Z',
+        passRate: 1.0,
+        results: [
+          {
+            name: 'b-test',
+            passed: true,
+            score: 0.9,
+            reasoning: 'OK',
+            inputTokens: 10,
+            outputTokens: 20,
+            costUsd: 0.001,
+            durationMs: 100,
+          },
+        ],
+        totalInputTokens: 10,
+        totalOutputTokens: 20,
+        totalCostUsd: 0.001,
+      },
+      join(project.baseDir, 'baselines', 'beta.json')
+    );
+
+    await expect(
+      run({
+        cwd: project.baseDir,
+        respond: fakeRespond(),
+        judge: fakeJudge({ Goodbye: 0.3 }),
+        flags: { all: true, failOnRegression: true },
+      })
+    ).rejects.toThrow(/regression/);
+  });
+
+  test('--all with --fail-on-regression does not throw when no regressions', async () => {
+    const config = {
+      prompts: {
+        alpha: { prompt: 'prompts/alpha.md', tests: 'tests/alpha/' },
+      },
+    };
+
+    project.mergeFiles({
+      'edd.config.json': JSON.stringify(config),
+      prompts: { 'alpha.md': 'You are alpha.' },
+      tests: {
+        alpha: {
+          'cases.json': JSON.stringify([
+            { name: 'a-test', input: 'Hello', rubric: 'Is a greeting' },
+          ]),
+        },
+      },
+    });
+    await project.write();
+
+    await expect(
+      run({
+        cwd: project.baseDir,
+        respond: fakeRespond(),
+        judge: fakeJudge(),
+        flags: { all: true, failOnRegression: true },
+      })
+    ).resolves.not.toThrow();
+  });
+
+  test('--all saves per-prompt last-run files', async () => {
+    const config = {
+      prompts: {
+        alpha: { prompt: 'prompts/alpha.md', tests: 'tests/alpha/' },
+        beta: { prompt: 'prompts/beta.md', tests: 'tests/beta/' },
+      },
+    };
+
+    project.mergeFiles({
+      'edd.config.json': JSON.stringify(config),
+      prompts: {
+        'alpha.md': 'You are alpha.',
+        'beta.md': 'You are beta.',
+      },
+      tests: {
+        alpha: {
+          'cases.json': JSON.stringify([
+            { name: 'a-test', input: 'Hello', rubric: 'Is a greeting' },
+          ]),
+        },
+        beta: {
+          'cases.json': JSON.stringify([
+            { name: 'b-test', input: 'Goodbye', rubric: 'Is a farewell' },
+          ]),
+        },
+      },
+    });
+    await project.write();
+
+    await run({
+      cwd: project.baseDir,
+      respond: fakeRespond(),
+      judge: fakeJudge(),
+      flags: { all: true },
+    });
+
+    expect(existsSync(join(project.baseDir, '.edd', 'last-run', 'alpha.json'))).toBe(true);
+    expect(existsSync(join(project.baseDir, '.edd', 'last-run', 'beta.json'))).toBe(true);
+  });
+
   test('iterations=1 produces no σ or iterations fields', async () => {
     await setupTestProject();
 

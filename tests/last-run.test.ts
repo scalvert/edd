@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { createBintastic, type BintasticProject } from 'bintastic';
 import type { RunResult } from '@scalvert/eval-core';
-import { saveLastRun, loadLastRun } from '../src/last-run.js';
+import { saveLastRun, loadLastRun, type PromptMetadata } from '../src/last-run.js';
 
 const { setupProject, teardownProject } = createBintastic({
   binPath: new URL('../dist/cli.js', import.meta.url).pathname,
@@ -60,6 +60,28 @@ describe('saveLastRun', () => {
 
     expect(loadedAlpha?.runId).toBe('alpha-run');
     expect(loadedBeta?.runId).toBe('beta-run');
+  });
+
+  test('saves and loads metadata when provided', async () => {
+    const metadata: PromptMetadata = {
+      promptName: 'my-prompt',
+      promptPath: 'prompts/my-prompt.md',
+      promptHash: 'abc123',
+    };
+    await saveLastRun(validRunResult, project.baseDir, 'my-prompt', metadata);
+
+    const loaded = await loadLastRun(project.baseDir, 'my-prompt');
+
+    expect(loaded?.promptMetadata).toEqual(metadata);
+    expect(loaded?.runId).toBe(validRunResult.runId);
+  });
+
+  test('omits promptMetadata when no metadata provided', async () => {
+    await saveLastRun(validRunResult, project.baseDir, 'my-prompt');
+
+    const loaded = await loadLastRun(project.baseDir, 'my-prompt');
+
+    expect(loaded?.promptMetadata).toBeUndefined();
   });
 });
 

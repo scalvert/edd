@@ -59,6 +59,18 @@ describe('edd cli', () => {
     expect(result.stderr).toContain('Iterations must be a positive integer');
   });
 
+  test('--threshold accepts 0', async () => {
+    const result = await runBin('run', '--threshold', '0', '--cwd', project.baseDir);
+
+    expect(result.stderr).not.toContain('Threshold must be a number between 0 and 1');
+  });
+
+  test('--threshold accepts 1', async () => {
+    const result = await runBin('run', '--threshold', '1', '--cwd', project.baseDir);
+
+    expect(result.stderr).not.toContain('Threshold must be a number between 0 and 1');
+  });
+
   test('run without config shows clear error', async () => {
     const result = await runBin('run', '--cwd', project.baseDir);
 
