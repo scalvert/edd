@@ -151,7 +151,7 @@ async function runSinglePrompt(
   const judge =
     options.judge ??
     createAnthropicJudge({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+      apiKey: requireApiKey(),
       model: options.judgeModel,
       threshold: options.threshold,
     });
