@@ -68,6 +68,7 @@
     "eslint-plugin-jsdoc": "^61.5.0",
     "eslint-plugin-prettier": "^5.2.6",
     "eslint-plugin-unicorn": "^62.0.0",
+    "globals": "^17.4.0",
     "prettier": "^3.5.3",
     "release-it": "^19.2.4",
     "tsup": "^8.0.0",
